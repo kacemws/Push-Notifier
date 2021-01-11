@@ -1,5 +1,8 @@
 const dotenv = require("dotenv");
-dotenv.config();
+var dotenvExpand = require("dotenv-expand");
+
+var myEnv = dotenv.config();
+dotenvExpand(myEnv);
 
 const express = require("express");
 const webpush = require("web-push");

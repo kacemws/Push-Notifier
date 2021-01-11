@@ -4,8 +4,8 @@ const App = mongoose.model("app", appSchema, "app");
 
 const psw = process.env.MONGO_PSW || "";
 const user = process.env.MONGO_USER || "";
-
-const connectionString = `mongodb+srv://${user}:${psw}@cluster0.vktca.mongodb.net/pushService?retryWrites=true&w=majority`;
+const connectionString = process.env.MONGO_CONNECTION_STRING || "";
+// const connectionString = `mongodb+srv://${user}:${psw}@cluster0.vktca.mongodb.net/pushService?retryWrites=true&w=majority`;
 
 async function createApp(data) {
   const { appName, email, publicKey, privateKey, secretKey } = data;
@@ -24,6 +24,7 @@ async function findApp(appName) {
 }
 
 function connect() {
+  console.log(connectionString);
   return mongoose.connect(connectionString, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
