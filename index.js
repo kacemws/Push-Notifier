@@ -58,21 +58,21 @@ app.get("/generate/:appName", async (req, res) => {
       res.status(400).json({
         message: "already exisits",
       });
+    } else {
+      appInstance = await appModule.create(data);
+      console.log("created app");
+
+      console.log({
+        appInstance,
+        data,
+      });
+
+      // Send 200 - generated keys
+      res.status(200).json({
+        publicKey,
+        secretKey,
+      });
     }
-
-    appInstance = await appModule.create(data);
-    console.log("created app");
-
-    console.log({
-      appInstance,
-      data,
-    });
-
-    // Send 200 - generated keys
-    res.status(200).json({
-      publicKey,
-      secretKey,
-    });
   } catch (err) {
     console.log(err);
     // res.status(statusCode).json({
