@@ -41,18 +41,11 @@ app.get("/generate/:appName", async (req, res) => {
     const { email } = req.body;
     const { appName } = req.params;
 
-    //generate vapid keys
-    const { publicKey, privateKey } = await webpush.generateVAPIDKeys();
-
-    const secretKey = randomString();
-    console.clear();
-
     const connector = appModule.connect();
 
     let appInstance = await connector.then(async () => {
       return appModule.find(appName);
     });
-    const data = { appName, email, publicKey, privateKey, secretKey };
 
     if (appInstance) {
       throw {
@@ -60,6 +53,13 @@ app.get("/generate/:appName", async (req, res) => {
         body: "already exisits",
       };
     }
+    //generate vapid keys
+    const { publicKey, privateKey } = await webpush.generateVAPIDKeys();
+
+    const secretKey = randomString();
+
+    const data = { appName, email, publicKey, privateKey, secretKey };
+
     appInstance = await appModule.create(data);
     console.log("created app");
 
@@ -83,10 +83,51 @@ app.get("/generate/:appName", async (req, res) => {
   }
 });
 
-app.post("subscribe/:appName", async (req, res) => {
+app.post("/subscribe/:appName", async (req, res) => {
   const { topic, subscription, secret_key } = req.body;
+  const { appName } = req.params;
 
   try {
+    if (!topic || !subscription || !secret_key) {
+      throw {
+        statusCode: 400,
+        body: "missing arguments!",
+      };
+    }
+    const connector = appModule.connect();
+
+    let appInstance = await connector.then(async () => {
+      return appModule.find(appName);
+    });
+
+    if (!appInstance) {
+      throw {
+        statusCode: 404,
+        body: "app doesn't exisit",
+      };
+    }
+
+    const { secretKey, topics } = appInstance;
+    if (secretKey != secret_key) {
+      throw {
+        statusCode: 403,
+        body: "secret keys not matching",
+      };
+    }
+
+    let index = topics.findIndex(({ name }) => name == topic);
+
+    if (index == -1) {
+      topics.push({
+        name: topic,
+        subscriptions: [],
+      });
+      await appModule.addTopic(appName, topics);
+    }
+
+    res.status(201).json({
+      message: "added subscription!",
+    });
   } catch (err) {
     console.log(err);
     if (err.statusCode) {
