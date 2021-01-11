@@ -55,44 +55,46 @@ app.get("/generate/:appName", async (req, res) => {
     const data = { appName, email, publicKey, privateKey, secretKey };
 
     if (appInstance) {
-      res.status(400).json({
-        message: "already exisits",
-      });
-    } else {
-      appInstance = await appModule.create(data);
-      console.log("created app");
-
-      console.log({
-        appInstance,
-        data,
-      });
-
-      // Send 200 - generated keys
-      res.status(200).json({
-        publicKey,
-        secretKey,
-      });
+      throw {
+        statusCode: 400,
+        body: "already exisits",
+      };
     }
+    appInstance = await appModule.create(data);
+    console.log("created app");
+
+    console.log({
+      appInstance,
+      data,
+    });
+
+    // Send 200 - generated keys
+    res.status(200).json({
+      publicKey,
+      secretKey,
+    });
   } catch (err) {
     console.log(err);
-    // res.status(statusCode).json({
-    //   message: body,
-    // });
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        message: err.body,
+      });
+    }
   }
 });
 
 app.post("subscribe/:appName", async (req, res) => {
   const { topic, subscription, secret_key } = req.body;
 
-  // will check for the topic in req.params.appName,
-
-  // if available will push the sub
-
-  // else, create topic then push the sub
-
-  return res.status(201).json({
-    message: "added subscription!",
-  });
+  try {
+  } catch (err) {
+    console.log(err);
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        message: err.body,
+      });
+    }
+  }
 });
 
 // Subscribe Route
