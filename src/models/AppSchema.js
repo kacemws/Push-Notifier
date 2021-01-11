@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const topicSchema = require("./TopicSchema");
 
 const appSchema = new mongoose.Schema({
   appName: {
@@ -25,6 +26,7 @@ const appSchema = new mongoose.Schema({
     type: Date,
     required: [true, "Created date is required"],
   },
+  topics: [topicSchema],
 });
 
 module.exports = appSchema;
