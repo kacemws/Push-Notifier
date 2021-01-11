@@ -14,11 +14,22 @@ async function createApp(data) {
     privateKey,
     secretKey,
     created: Date.now(),
+    topics: [],
   }).save();
 }
 
 async function findApp(appName) {
   return await App.findOne({ appName });
+}
+
+async function addTopic(appName, topics) {
+  return await App.findOneAndUpdate(
+    { appName },
+    { topics },
+    {
+      useFindAndModify: false,
+    }
+  );
 }
 
 function connect() {
@@ -30,4 +41,5 @@ function connect() {
 
 exports.create = createApp;
 exports.find = findApp;
+exports.addTopic = addTopic;
 exports.connect = connect;
