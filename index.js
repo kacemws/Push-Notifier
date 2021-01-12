@@ -118,13 +118,14 @@ app.post("/subscribe/:appName", async (req, res) => {
     let index = topics.findIndex(({ name }) => name == topic);
 
     if (index == -1) {
-      topics.push({
-        name: topic,
-        subscriptions: [],
-      });
-      await appModule.addTopic(appName, topics);
+      index =
+        topics.push({
+          name: topic,
+          subscriptions: [],
+        }) - 1;
     }
-
+    topics[index].subscriptions.push(subscription);
+    await appModule.addTopic(appName, topics);
     res.status(201).json({
       message: "added subscription!",
     });
