@@ -19,15 +19,6 @@ const port = process.env.PORT || 8083;
 app.use(bodyParser.json());
 app.use(cors());
 
-const publicVapidKey = process.env.PUBLIC_VAPID_KEY || "";
-const privateVapidKey = process.env.PRIVATE_VAPID_KEY || "";
-
-webpush.setVapidDetails(
-  "mailto:support@neo.com",
-  publicVapidKey,
-  privateVapidKey
-);
-
 app.get("/", (req, res) => {
   console.log("hey bih");
   res.send(
@@ -253,27 +244,71 @@ app.delete("/subscribe/:appName", async (req, res) => {
 // Subscribe Route
 app.post("/push/:appName", async (req, res) => {
   // Get pushSubscription object
-  const subscription = req.body;
-  const message = {
-    title: "local testing",
-  };
-
-  console.log({ subscription, message });
-
-  // Create payload
-  const payload = JSON.stringify({ title: message.title });
+  const { topic, message, secret_key } = req.body;
+  const { appName } = req.params;
 
   try {
+    if (!topic || !message?.title || !message?.body || !secret_key) {
+      throw {
+        statusCode: 400,
+        body: "missing arguments!",
+      };
+    }
+
+    const connector = appModule.connect();
+
+    let appInstance = await connector.then(async () => {
+      return appModule.find(appName);
+    });
+
+    //if the given app doesn't exists ---> error
+    if (!appInstance) {
+      throw {
+        statusCode: 404,
+        body: "app doesn't exisit",
+      };
+    }
+
+    const { secretKey, topics, publicKey, privateKey, email } = appInstance;
+
+    // if the secret keys are not matching ---> error
+    if (secretKey != secret_key) {
+      throw {
+        statusCode: 403,
+        body: "secret keys not matching",
+      };
+    }
+
+    let index = topics.findIndex(({ name }) => name == topic);
+
+    //if the given topic doesn't exists ---> error
+    if (index == -1) {
+      throw {
+        statusCode: 404,
+        body: "topic not found!",
+      };
+    }
+
+    //if conditions are met, prepare webpush and send notifications
+    webpush.setVapidDetails(`mailto:${email}`, publicKey, privateKey);
+
+    const payload = JSON.stringify({ title: message.title });
+
     // Pass object into sendNotification
-    await webpush.sendNotification(subscription, payload);
+    for await (subscription of topics[index].subscriptions) {
+      delete subscription["_id"];
+      await webpush.sendNotification(subscription, payload);
+    }
 
     // Send 201 - notification sent
     res.status(201).json({
-      message: "sent notification successfully",
+      message: "sent notifications successfully",
     });
-  } catch ({ statusCode, body }) {
-    res.status(statusCode).json({
-      message: body,
+  } catch (err) {
+    //{ statusCode, body }
+    console.log(err);
+    res.status(500).json({
+      message: "wait",
     });
   }
 });
