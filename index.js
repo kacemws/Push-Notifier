@@ -88,7 +88,14 @@ app.post("/subscribe/:appName", async (req, res) => {
   const { appName } = req.params;
 
   try {
-    if (!topic || !subscription || !secret_key) {
+    //if an argument is missing ---> error
+    if (
+      !topic ||
+      !subscription?.endpoint ||
+      !subscription?.keys?.auth ||
+      !subscription?.keys?.p256dh ||
+      !secret_key
+    ) {
       throw {
         statusCode: 400,
         body: "missing arguments!",
@@ -100,6 +107,7 @@ app.post("/subscribe/:appName", async (req, res) => {
       return appModule.find(appName);
     });
 
+    //if the given app doesn't exists ---> error
     if (!appInstance) {
       throw {
         statusCode: 404,
@@ -117,6 +125,7 @@ app.post("/subscribe/:appName", async (req, res) => {
 
     let index = topics.findIndex(({ name }) => name == topic);
 
+    //if the given topic doesn't exists ---> create new one
     if (index == -1) {
       index =
         topics.push({
@@ -124,8 +133,26 @@ app.post("/subscribe/:appName", async (req, res) => {
           subscriptions: [],
         }) - 1;
     }
+
+    //get given subscription's index (to check if it exists or not)
+    let subIndex = topics[index].subscriptions.findIndex(
+      ({ endpoint, keys }) =>
+        endpoint == subscription.endpoint &&
+        JSON.stringify(keys) == JSON.stringify(subscription.keys)
+    );
+
+    // if already subscribed in that given topic ---> error
+    if (subIndex != -1) {
+      throw {
+        statusCode: 404,
+        body: "already subscribed!",
+      };
+    }
+
+    // if the conditions are all met, add subscription
     topics[index].subscriptions.push(subscription);
     await appModule.addTopic(appName, topics);
+
     res.status(201).json({
       message: "added subscription!",
     });
