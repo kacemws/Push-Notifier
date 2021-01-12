@@ -166,6 +166,90 @@ app.post("/subscribe/:appName", async (req, res) => {
   }
 });
 
+app.delete("/subscribe/:appName", async (req, res) => {
+  const { topic, subscription, secret_key } = req.body;
+  const { appName } = req.params;
+
+  try {
+    //if an argument is missing ---> error
+    if (
+      !topic ||
+      !subscription?.endpoint ||
+      !subscription?.keys?.auth ||
+      !subscription?.keys?.p256dh ||
+      !secret_key
+    ) {
+      throw {
+        statusCode: 400,
+        body: "missing arguments!",
+      };
+    }
+    const connector = appModule.connect();
+
+    let appInstance = await connector.then(async () => {
+      return appModule.find(appName);
+    });
+
+    //if the given app doesn't exists ---> error
+    if (!appInstance) {
+      throw {
+        statusCode: 404,
+        body: "app doesn't exisit",
+      };
+    }
+
+    const { secretKey, topics } = appInstance;
+
+    // if the secret keys are not matching ---> error
+    if (secretKey != secret_key) {
+      throw {
+        statusCode: 403,
+        body: "secret keys not matching",
+      };
+    }
+
+    let index = topics.findIndex(({ name }) => name == topic);
+
+    //if the given topic doesn't exists ---> error
+    if (index == -1) {
+      throw {
+        statusCode: 404,
+        body: "topic not found!",
+      };
+    }
+
+    //get given subscription's index (to check if it exists or not)
+    let subIndex = topics[index].subscriptions.findIndex(
+      ({ endpoint, keys }) =>
+        endpoint == subscription.endpoint &&
+        JSON.stringify(keys) == JSON.stringify(subscription.keys)
+    );
+
+    // if subscription not found in that given topic ---> error
+    if (subIndex == -1) {
+      throw {
+        statusCode: 404,
+        body: "subscription not found",
+      };
+    }
+
+    //if all conditions are met, deleting subscription!
+    topics[index].subscriptions.splice(subIndex, 1);
+    await appModule.addTopic(appName, topics);
+
+    res.status(201).json({
+      message: "deleted subscription!",
+    });
+  } catch (err) {
+    console.log(err);
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        message: err.body,
+      });
+    }
+  }
+});
+
 // Subscribe Route
 app.post("/push/:appName", async (req, res) => {
   // Get pushSubscription object
