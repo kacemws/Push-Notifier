@@ -18,13 +18,13 @@ const app = express();
 // PORT
 const port = process.env.PORT || 8083;
 
+// ROUTES
+const subscription = require("./src/routes/Subscription");
+
 //MIDDLEWARES
 app.use(bodyParser.json());
 app.use(cors());
-
-// ROUTES
-// const randomString = require("./src/utils");
-// const appModule = require("./src/routes/App");
+app.use("/subscription", subscription);
 
 app.get("/", (req, res) => {
   res.send(
