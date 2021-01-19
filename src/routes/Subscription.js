@@ -5,12 +5,13 @@ const express = require("express");
 // const bcrypt = require("bcryptjs");
 // const jwt = require("jsonwebtoken");
 const router = express.Router();
+const auth = require("./middleware/auth");
 
 //utils
 const randomString = require("../utils");
 const appModule = require("../logic/Subscription");
 
-router.get("/generate/:appName", async (req, res) => {
+router.get("/generate/:appName", auth, async (req, res) => {
   try {
     //get email from body
     const { email } = req.body;
@@ -54,7 +55,7 @@ router.get("/generate/:appName", async (req, res) => {
   }
 });
 
-router.post("/:appName", async (req, res) => {
+router.post("/:appName", auth, async (req, res) => {
   const { topic, subscription, secret_key } = req.body;
   const { appName } = req.params;
 
@@ -134,7 +135,7 @@ router.post("/:appName", async (req, res) => {
   }
 });
 
-router.delete("/:appName", async (req, res) => {
+router.delete("/:appName", auth, async (req, res) => {
   const { topic, subscription, secret_key } = req.body;
   const { appName } = req.params;
 
@@ -215,7 +216,7 @@ router.delete("/:appName", async (req, res) => {
   }
 });
 
-router.post("/:appName/push/", async (req, res) => {
+router.post("/:appName/push/", auth, async (req, res) => {
   // Get pushSubscription object
   const { topic, message, secret_key } = req.body;
   const { appName } = req.params;
