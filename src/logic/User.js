@@ -25,7 +25,8 @@ async function findUser(email) {
 }
 
 async function findUserById(id) {
-  return await User.findOne({ id });
+  console.log({ id });
+  return await User.findOne({ _id: id });
 }
 
 async function matchingPasswords(psw, storedPsw) {

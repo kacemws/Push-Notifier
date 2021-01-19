@@ -5,6 +5,30 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 const userModule = require("../logic/User");
+const auth = require("./middleware/auth");
+
+router.get("/", auth, async (req, res) => {
+  try {
+    const {
+      email,
+      firstName,
+      lastName,
+      username,
+    } = await userModule.findUserById(req.user.id);
+    res.json({
+      email,
+      firstName,
+      lastName,
+      username,
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({
+        message: err.body,
+      });
+    }
+  }
+});
 
 router.post("/signup", async (req, res) => {
   try {
@@ -38,9 +62,9 @@ router.post("/signup", async (req, res) => {
     // Send 200 - generated token
     jwt.sign(
       payload,
-      "randomString",
+      "secret",
       {
-        expiresIn: 10,
+        expiresIn: 36000,
       },
       (err, token) => {
         if (err) throw err;
@@ -99,7 +123,7 @@ router.post("/login", async (req, res) => {
       payload,
       "secret",
       {
-        expiresIn: 3600,
+        expiresIn: 36000,
       },
       (err, token) => {
         if (err) throw err;
