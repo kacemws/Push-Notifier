@@ -20,11 +20,13 @@ const port = process.env.PORT || 8083;
 
 // ROUTES
 const subscription = require("./src/routes/Subscription");
+const user = require("./src/routes/User");
 
 //MIDDLEWARES
 app.use(bodyParser.json());
 app.use(cors());
 app.use("/subscription", subscription);
+app.use("/user", user);
 
 app.get("/", (req, res) => {
   res.send(
