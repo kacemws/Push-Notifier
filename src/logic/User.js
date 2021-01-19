@@ -28,6 +28,11 @@ async function findUserById(id) {
   return await User.findOne({ id });
 }
 
+async function matchingPasswords(psw, storedPsw) {
+  return await bcrypt.compare(psw, storedPsw);
+}
+
 exports.create = createUser;
 exports.find = findUser;
 exports.findUserById = findUserById;
+exports.matchingPasswords = matchingPasswords;
