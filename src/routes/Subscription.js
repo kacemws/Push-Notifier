@@ -5,7 +5,7 @@ const express = require("express");
 // const bcrypt = require("bcryptjs");
 // const jwt = require("jsonwebtoken");
 const router = express.Router();
-const auth = require("./middleware/auth");
+const auth = require("../middleware/auth");
 
 //utils
 const randomString = require("../utils");
