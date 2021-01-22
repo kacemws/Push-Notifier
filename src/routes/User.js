@@ -1,6 +1,6 @@
 //middleware
 const express = require("express");
-// const { check, validationResult } = require("express-validator");
+const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 
@@ -32,15 +32,24 @@ router.get("/", auth, async (req, res) => {
 
 router.post("/signup", async (req, res) => {
   try {
-    const { email, firstName, lastName, username, password } = req.body;
-    if (!email || !firstName || !lastName || !username || !password) {
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
       throw {
         statusCode: 400,
-        body: "missing arguments!",
+        body: "Empty request!",
+      };
+    }
+    const { error } = verifyUsersData(req.body);
+
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
       };
     }
 
-    let user = await userModule.find(email);
+    const data = req.body;
+
+    let user = await userModule.find(data.email);
 
     if (user) {
       throw {
@@ -48,8 +57,6 @@ router.post("/signup", async (req, res) => {
         body: "already exisits",
       };
     }
-
-    const data = { email, firstName, lastName, username, password };
 
     user = await userModule.create(data);
 
@@ -76,15 +83,23 @@ router.post("/signup", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    if (!email || !password) {
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
       throw {
         statusCode: 400,
-        body: "missing arguments!",
+        body: "Empty request!",
       };
     }
+    const { error } = verifyUsersLogin(req.body);
+
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
+      };
+    }
+
+    const { email, password } = req.body;
 
     let user = await userModule.find(email);
     if (!user) {
@@ -126,5 +141,26 @@ router.post("/login", async (req, res) => {
     }
   }
 });
+
+function verifyUsersData(data) {
+  const schema = Joi.object({
+    email: Joi.string().email().required(),
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    username: Joi.string().required(),
+    password: Joi.string().required(),
+  });
+
+  return schema.validate(data);
+}
+
+function verifyUsersLogin(data) {
+  const schema = Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
+  });
+
+  return schema.validate(data);
+}
 
 module.exports = router;
