@@ -54,25 +54,15 @@ router.post("/signup", async (req, res) => {
     user = await userModule.create(data);
 
     const payload = {
-      user: {
-        id: user.id,
-      },
+      id: user.id,
     };
-
     // Send 200 - generated token
-    jwt.sign(
-      payload,
-      "secret",
-      {
-        expiresIn: 36000,
-      },
-      (err, token) => {
-        if (err) throw err;
-        res.status(200).json({
-          token,
-        });
-      }
-    );
+    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: 36000,
+    });
+    res.status(200).json({
+      accessToken,
+    });
   } catch (err) {
     console.log(err);
     if (err.statusCode) {
@@ -115,23 +105,14 @@ router.post("/login", async (req, res) => {
     }
 
     const payload = {
-      user: {
-        id: user.id,
-      },
+      id: user.id,
     };
-    jwt.sign(
-      payload,
-      "secret",
-      {
-        expiresIn: 36000,
-      },
-      (err, token) => {
-        if (err) throw err;
-        res.status(200).json({
-          token,
-        });
-      }
-    );
+    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: 36000,
+    });
+    res.status(200).json({
+      accessToken,
+    });
   } catch (err) {
     console.log(err);
     if (err.statusCode) {
