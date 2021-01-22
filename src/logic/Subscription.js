@@ -20,6 +20,10 @@ async function findApp(appName, owner) {
   return await App.findOne({ appName, owner });
 }
 
+async function getUsersApps(owner) {
+  return await App.find({ owner });
+}
+
 async function addTopic(appName, owner, topics) {
   return await App.findOneAndUpdate(
     { appName, owner },
@@ -33,3 +37,4 @@ async function addTopic(appName, owner, topics) {
 exports.create = createApp;
 exports.find = findApp;
 exports.addTopic = addTopic;
+exports.getByUser = getUsersApps;

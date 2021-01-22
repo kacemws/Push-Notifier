@@ -5,21 +5,25 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 const userModule = require("../logic/User");
+const subscriptionModule = require("../logic/Subscription");
 const auth = require("../middleware/auth");
 
 router.get("/", auth, async (req, res) => {
   try {
+    const owner = req.user.id;
+    const apps = await subscriptionModule.getByUser(owner);
     const {
       email,
       firstName,
       lastName,
       username,
-    } = await userModule.findUserById(req.user.id);
+    } = await userModule.findUserById(owner);
     res.json({
       email,
       firstName,
       lastName,
       username,
+      apps,
     });
   } catch (err) {
     if (err.statusCode) {
