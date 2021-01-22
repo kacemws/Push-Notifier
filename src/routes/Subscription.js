@@ -17,6 +17,8 @@ router.get("/generate/:appName", auth, async (req, res) => {
         body: "Empty request!",
       };
     }
+    console.log(req.user.id);
+    console.log("printed user**********************");
 
     //get email from body
     const { email } = req.body;
