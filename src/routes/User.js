@@ -58,10 +58,12 @@ router.post("/signup", async (req, res) => {
     };
     // Send 200 - generated token
     const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: 36000,
+      expiresIn: "15m",
     });
+    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET);
     res.status(200).json({
       accessToken,
+      refreshToken,
     });
   } catch (err) {
     console.log(err);
@@ -108,10 +110,12 @@ router.post("/login", async (req, res) => {
       id: user.id,
     };
     const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-      expiresIn: 36000,
+      expiresIn: "15m",
     });
+    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET);
     res.status(200).json({
       accessToken,
+      refreshToken,
     });
   } catch (err) {
     console.log(err);
