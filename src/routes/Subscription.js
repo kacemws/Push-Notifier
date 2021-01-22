@@ -17,11 +17,10 @@ router.get("/generate/:appName", auth, async (req, res) => {
         body: "Empty request!",
       };
     }
-    console.log(req.user.id);
-    console.log("printed user**********************");
 
     //get email from body
     const { email } = req.body;
+    const owner = req.user?.id;
     const { appName } = req.params;
     const { error } = verifyEmail({ email });
 
@@ -32,9 +31,10 @@ router.get("/generate/:appName", auth, async (req, res) => {
       };
     }
 
-    let appInstance = await appModule.find(appName);
+    let appInstance = await appModule.find(appName, owner);
 
     if (appInstance) {
+      console.log(appInstance);
       throw {
         statusCode: 400,
         body: "already exisits",
@@ -45,7 +45,7 @@ router.get("/generate/:appName", auth, async (req, res) => {
 
     const secretKey = randomString();
 
-    const data = { appName, email, publicKey, privateKey, secretKey };
+    const data = { appName, email, publicKey, privateKey, secretKey, owner };
 
     appInstance = await appModule.create(data);
     console.log("created app");
@@ -61,7 +61,7 @@ router.get("/generate/:appName", auth, async (req, res) => {
       secretKey,
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     if (err.statusCode) {
       res.status(err.statusCode).json({
         message: err.body,
@@ -82,6 +82,7 @@ router.post("/:appName", auth, async (req, res) => {
     }
 
     const { topic, subscription, secret_key } = req.body;
+    const owner = req.user?.id;
 
     const { error } = verifySubscription({
       topic,
@@ -98,7 +99,7 @@ router.post("/:appName", auth, async (req, res) => {
       };
     }
 
-    let appInstance = await appModule.find(appName);
+    let appInstance = await appModule.find(appName, owner);
 
     //if the given app doesn't exists ---> error
     if (!appInstance) {
@@ -144,13 +145,13 @@ router.post("/:appName", auth, async (req, res) => {
 
     // if the conditions are all met, add subscription
     topics[index].subscriptions.push(subscription);
-    await appModule.addTopic(appName, topics);
+    await appModule.addTopic(appName, topics, owner);
 
     res.status(201).json({
       message: "added subscription!",
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     if (err.statusCode) {
       res.status(err.statusCode).json({
         message: err.body,
@@ -173,6 +174,7 @@ router.delete("/:appName", auth, async (req, res) => {
     }
 
     const { topic, subscription, secret_key } = req.body;
+    const owner = req.user?.id;
 
     const { error } = verifySubscription({
       topic,
@@ -189,7 +191,7 @@ router.delete("/:appName", auth, async (req, res) => {
       };
     }
 
-    let appInstance = await appModule.find(appName);
+    let appInstance = await appModule.find(appName, owner);
 
     //if the given app doesn't exists ---> error
     if (!appInstance) {
@@ -236,13 +238,13 @@ router.delete("/:appName", auth, async (req, res) => {
 
     //if all conditions are met, deleting subscription!
     topics[index].subscriptions.splice(subIndex, 1);
-    await appModule.addTopic(appName, topics);
+    await appModule.addTopic(appName, topics, owner);
 
     res.status(201).json({
       message: "deleted subscription!",
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     if (err.statusCode) {
       res.status(err.statusCode).json({
         message: err.body,
@@ -264,6 +266,7 @@ router.post("/:appName/push/", auth, async (req, res) => {
 
     // Get pushSubscription object
     const { topic, message, secret_key } = req.body;
+    const owner = req.user?.id;
     const { error } = verifyMessage({
       topic,
       title: message?.title,
@@ -277,7 +280,7 @@ router.post("/:appName/push/", auth, async (req, res) => {
       };
     }
 
-    let appInstance = await appModule.find(appName);
+    let appInstance = await appModule.find(appName, owner);
 
     //if the given app doesn't exists ---> error
     if (!appInstance) {

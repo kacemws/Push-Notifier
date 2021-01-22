@@ -27,6 +27,10 @@ const appSchema = new mongoose.Schema({
     required: [true, "Created date is required"],
   },
   topics: [topicSchema],
+  owner: {
+    type: String,
+    required: [true, "The owner's id is required"],
+  },
 });
 
 module.exports = appSchema;
