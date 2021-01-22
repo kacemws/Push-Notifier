@@ -1,9 +1,7 @@
 //middleware
 const webpush = require("web-push");
 const express = require("express");
-// const { check, validationResult } = require("express-validator");
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
+const Joi = require("joi");
 const router = express.Router();
 const auth = require("../middleware/auth");
 
@@ -13,9 +11,24 @@ const appModule = require("../logic/Subscription");
 
 router.get("/generate/:appName", auth, async (req, res) => {
   try {
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
+      throw {
+        statusCode: 400,
+        body: "Empty request!",
+      };
+    }
+
     //get email from body
     const { email } = req.body;
     const { appName } = req.params;
+    const { error } = verifyEmail({ email });
+
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
+      };
+    }
 
     let appInstance = await appModule.find(appName);
 
@@ -56,21 +69,30 @@ router.get("/generate/:appName", auth, async (req, res) => {
 });
 
 router.post("/:appName", auth, async (req, res) => {
-  const { topic, subscription, secret_key } = req.body;
   const { appName } = req.params;
 
   try {
-    //if an argument is missing ---> error
-    if (
-      !topic ||
-      !subscription?.endpoint ||
-      !subscription?.keys?.auth ||
-      !subscription?.keys?.p256dh ||
-      !secret_key
-    ) {
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
       throw {
         statusCode: 400,
-        body: "missing arguments!",
+        body: "Empty request!",
+      };
+    }
+
+    const { topic, subscription, secret_key } = req.body;
+
+    const { error } = verifySubscription({
+      topic,
+      endpoint: subscription?.endpoint,
+      auth: subscription?.keys?.auth,
+      p256dh: subscription?.keys?.p256dh,
+      secret_key,
+    });
+    //if an argument is missing ---> error
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
       };
     }
 
@@ -136,21 +158,32 @@ router.post("/:appName", auth, async (req, res) => {
 });
 
 router.delete("/:appName", auth, async (req, res) => {
-  const { topic, subscription, secret_key } = req.body;
   const { appName } = req.params;
 
   try {
     //if an argument is missing ---> error
-    if (
-      !topic ||
-      !subscription?.endpoint ||
-      !subscription?.keys?.auth ||
-      !subscription?.keys?.p256dh ||
-      !secret_key
-    ) {
+
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
       throw {
         statusCode: 400,
-        body: "missing arguments!",
+        body: "Empty request!",
+      };
+    }
+
+    const { topic, subscription, secret_key } = req.body;
+
+    const { error } = verifySubscription({
+      topic,
+      endpoint: subscription?.endpoint,
+      auth: subscription?.keys?.auth,
+      p256dh: subscription?.keys?.p256dh,
+      secret_key,
+    });
+    //if an argument is missing ---> error
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
       };
     }
 
@@ -217,15 +250,28 @@ router.delete("/:appName", auth, async (req, res) => {
 });
 
 router.post("/:appName/push/", auth, async (req, res) => {
-  // Get pushSubscription object
-  const { topic, message, secret_key } = req.body;
   const { appName } = req.params;
 
   try {
-    if (!topic || !message?.title || !message?.body || !secret_key) {
+    if (req.body.constructor === Object && Object.keys(req.body).length === 0) {
       throw {
         statusCode: 400,
-        body: "missing arguments!",
+        body: "Empty request!",
+      };
+    }
+
+    // Get pushSubscription object
+    const { topic, message, secret_key } = req.body;
+    const { error } = verifyMessage({
+      topic,
+      title: message?.title,
+      body: message?.body,
+      secret_key,
+    });
+    if (error) {
+      throw {
+        statusCode: 400,
+        body: error.details[0].message,
       };
     }
 
@@ -275,12 +321,44 @@ router.post("/:appName/push/", auth, async (req, res) => {
       message: "sent notifications successfully",
     });
   } catch (err) {
-    //{ statusCode, body }
-    console.log(err);
-    res.status(500).json({
-      message: "wait",
-    });
+    const { statusCode, body } = err;
+    if (statusCode) {
+      res.status(statusCode).json({
+        message: body,
+      });
+    } else {
+      res.status(500);
+    }
   }
 });
+
+function verifyEmail(data) {
+  const schema = Joi.object({
+    email: Joi.string().email().required(),
+  });
+
+  return schema.validate(data);
+}
+function verifySubscription(data) {
+  const schema = Joi.object({
+    topic: Joi.string().required(),
+    endpoint: Joi.string().required(),
+    auth: Joi.string().required(),
+    p256dh: Joi.string().required(),
+    secret_key: Joi.string().required(),
+  });
+
+  return schema.validate(data);
+}
+function verifyMessage(data) {
+  const schema = Joi.object({
+    topic: Joi.string().required(),
+    title: Joi.string().required(),
+    body: Joi.string().required(),
+    secret_key: Joi.string().required(),
+  });
+
+  return schema.validate(data);
+}
 
 module.exports = router;
